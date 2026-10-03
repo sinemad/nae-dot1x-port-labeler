@@ -47,7 +47,7 @@ DESCRIPTION:    This script monitors the up and down state of the ports of a swi
                 |LOG_DEBUG|HTTP GET status: 200
                 |LOG_DEBUG|USERNAME: rpi
                 |LOG_DEBUG|User rpi logged in on port 1/1/1
-                |LOG_DEBUG|COMMAND EXECUTED: config interface 1/1/1 description logged in user - rpi exit exit
+                |LOG_DEBUG|COMMAND EXECUTED: config interface 1/1/1 description authenticated user - rpi exit exit
                 |LOG_DEBUG|COMMAND EXECUTED: show interface 1/1/1
                 |LOG_DEBUG|================ Up ================
 
@@ -74,7 +74,7 @@ Manifest = {
     'Name': 'port_dot1x_user_label',
     'Description': 'Rename port based on authenticated user',
     'Version': '1.0',
-    'TargetSoftwareVersion': '10.04',
+    'TargetSoftwareVersion': '10.16',
     'Author': 'Team Aruba123'
 }
 
@@ -201,7 +201,6 @@ class Agent(NAE):
             # so the admin can troubleshoot
             if r.status_code != 200 :
                 self.logger.debug("Check the GET status: {}".format(r.status_code))
-                self.logger.debug("Check the GET status: {}".format(r.raise_for_status()))
                 r.raise_for_status()
             # Convert the returned results to a JSON object
             json_results = r.json()
@@ -217,7 +216,7 @@ class Agent(NAE):
                 self.logger.debug('User ' + username + ' logged in on port ' + interface_id)
                 # Execute this command to update the interface description with the username
                 ActionCLI("config\ninterface " + interface_id  + "\ndescription authenticated user - " + username + "\nexit\nexit")
-                self.logger.debug("COMMAND EXECUTED: config interface " + interface_id  + " description logged in user - " + username + " exit exit")
+                self.logger.debug("COMMAND EXECUTED: config interface " + interface_id  + " description authenticated user - " + username + " exit exit")
                 # Execute this command so the admin can firm the description label was updated with the username
                 ActionCLI('show interface ' + interface_id)
                 self.logger.debug('COMMAND EXECUTED: show interface ' + interface_id)

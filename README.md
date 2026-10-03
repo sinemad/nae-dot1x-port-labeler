@@ -20,8 +20,7 @@ Monitors interface link state. When a port comes up, the agent queries
 `port_access_clients` for that port; if the client authenticated via 802.1X, the
 agent rewrites the interface description to `authenticated user - <username>`. When
 the port goes down, the description is cleared. Every action is also written to the
-NAE debug log and syslog, and the agent raises a Minor alert while a labeled port is
-active.
+NAE debug log and syslog, and the agent raises a Minor alert when a port goes down.
 
 Example debug output for user `rpi` connecting on `1/1/1`:
 
@@ -31,7 +30,7 @@ Example debug output for user `rpi` connecting on `1/1/1`:
 |LOG_DEBUG|HTTP GET status: 200
 |LOG_DEBUG|USERNAME: rpi
 |LOG_DEBUG|User rpi logged in on port 1/1/1
-|LOG_DEBUG|COMMAND EXECUTED: config interface 1/1/1 description logged in user - rpi exit exit
+|LOG_DEBUG|COMMAND EXECUTED: config interface 1/1/1 description authenticated user - rpi exit exit
 |LOG_DEBUG|COMMAND EXECUTED: show interface 1/1/1
 |LOG_DEBUG|================ /Up ================
 ```
@@ -43,6 +42,7 @@ Example debug output for user `rpi` connecting on `1/1/1`:
 
 **TODO**
 - Add MAC Authentication support (label the port with the client's MAC address).
+- See [Planned updates for 10.16+](#planned-updates-for-1016) below.
 
 ### `interface_link_state_monitor.py` (reference)
 
@@ -53,7 +53,7 @@ reference for the monitor/rule structure reused above.
 
 ## Requirements
 
-- An ArubaOS-CX switch running firmware **10.04** or later with NAE enabled.
+- An ArubaOS-CX switch running firmware **10.16** or later with NAE enabled.
 - Switch management access to upload/install NAE agent scripts (CLI or REST API).
 
 ## Installing an agent
@@ -64,6 +64,33 @@ reference for the monitor/rule structure reused above.
 2. Create an agent instance from the script's `Manifest['Name']`.
 3. Enable the agent on the interfaces/ports you want monitored.
 4. Tail the agent's debug log (or syslog) to confirm rules are firing as expected.
+
+## Planned updates for 10.16+
+
+The agent still uses the v1 REST API and an interface up/down trigger. These changes
+are not done yet because they depend on details of the 10.16 NAE/REST API that have not
+been verified.
+
+1. **Trigger on authentication, not link state.** At link-up, 802.1X often has not
+   finished, so the `port_access_clients` lookup can come back empty and the port is left
+   unlabeled. Re-authentication or a user change on a port that stays up is also missed.
+   Replace the link-state monitor with one on port-access client/auth state.
+2. **Use a v10.xx REST URI** for the monitor and the username lookup, if NAE monitors
+   accept it on 10.16. This also removes the v1 caveat above.
+3. **Replace `rest_get()`** (bare `HTTP_ADDRESS` global, `verify=False`) with whatever
+   local REST mechanism current NAE supports.
+4. **Check Python 3 compatibility** and the Python/library support listed in the 10.16 NAE guide.
+5. **Decide the alert behaviour.** The agent sets a Minor alert on link-down and clears it
+   on link-up. Confirm that is intended, or switch to alerting while a labeled port is active.
+6. Add MAC Authentication labeling once the new trigger is in place.
+
+**Needed to proceed** (any one):
+- A `GET /rest/v10.xx/system/ports/<port>/port_access_clients?depth=2` response from a
+  10.16 switch with an authenticated client.
+- The "REST API version support" and "URIs for monitors" sections of the 10.16 NAE guide.
+- Access to a 10.16 switch or simulator for testing.
+
+`TargetSoftwareVersion` is already set to `'10.16'`, but the agent has not been tested on 10.16.
 
 ## License
 
