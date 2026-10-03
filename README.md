@@ -1,4 +1,4 @@
-# hackathon-2021
+# nae-dot1x-port-labeler
 
 ArubaOS-CX Network Analytics Engine (NAE) scripts, built for the Aruba 2021 hackathon
 
